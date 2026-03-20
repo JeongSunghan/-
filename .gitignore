@@ -12,6 +12,14 @@ requirements.txt
 # Local environment
 .env
 .env.*
+.env.local
+.env.development.local
+.env.production.local
+!.env.example
+.next/
+node_modules/
+.vercel/
+out/
 *.log
 Thumbs.db
 .DS_Store
