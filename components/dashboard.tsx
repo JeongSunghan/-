@@ -104,6 +104,16 @@ function getTrustTone(score: number) {
   return "low";
 }
 
+function getSourceLabel(sourceType: Report["sourceType"]) {
+  if (sourceType === "user_report") {
+    return "현장 제보";
+  }
+  if (sourceType === "community_report") {
+    return "동네 소식";
+  }
+  return "기본 등록";
+}
+
 function buildNeighborhoodPulse(reports: Report[]) {
   const pulseMap = new Map<
     string,
@@ -171,20 +181,20 @@ export default function Dashboard({
     null
   );
   const [geoStatus, setGeoStatus] = useState(
-    "GPS는 선택입니다. 이후 Kakao 지도 반경 매칭의 기준점으로 사용됩니다."
+    "위치는 선택 사항이에요. 구와 장소만 적어도 제보할 수 있어요."
   );
   const [dataStatus, setDataStatus] = useState(
     hasSupabaseEnv
-      ? "Supabase 연결을 확인하는 중입니다."
-      : "Supabase env가 없어 mock 데이터와 localStorage로 실행 중입니다."
+      ? "주변 제보를 불러오는 중입니다."
+      : "현재는 예시 제보로 둘러보는 화면입니다."
   );
   const [reportStatus, setReportStatus] = useState(
-    "제보는 즉시 카드 피드에 반영됩니다."
+    "간단히 적어 주시면 바로 목록에 반영돼요."
   );
   const [subscriptionStatus, setSubscriptionStatus] = useState(
     hasSupabaseEnv
-      ? "구독 저장은 localStorage와 Supabase를 함께 시도합니다."
-      : "env 연결 전에는 브라우저에만 저장됩니다."
+      ? "원하는 동네를 저장해 두면 다음 소식을 더 빨리 확인할 수 있어요."
+      : "지금은 이 기기에만 알림 설정이 저장됩니다."
   );
 
   useEffect(() => {
@@ -225,12 +235,12 @@ export default function Dashboard({
 
         setDataStatus(
           nextReports.length > 0 || nextProviders.length > 0
-            ? "Supabase 데이터를 불러왔습니다."
-            : "Supabase는 연결됐지만 아직 실데이터가 없습니다."
+            ? "지금 들어온 제보를 순서대로 보여드리고 있어요."
+            : "아직 등록된 소식이 많지 않아 첫 제보를 기다리고 있어요."
         );
       } catch {
         if (!cancelled) {
-          setDataStatus("Supabase 연결에 실패해 mock 데이터로 계속 진행합니다.");
+          setDataStatus("연결이 잠시 불안정해 예시 화면으로 보여드리고 있어요.");
         }
       }
     }
@@ -272,20 +282,20 @@ export default function Dashboard({
       )
     : 0;
   const supabaseLabel = !hasSupabaseEnv
-    ? "Supabase Env Needed"
-    : dataStatus.includes("불러왔") || dataStatus.includes("연결됐")
-      ? "Supabase Live"
-      : dataStatus.includes("실패")
-        ? "Supabase Fallback"
-        : "Supabase Connecting";
+    ? "시범 화면"
+    : dataStatus.includes("순서대로")
+      ? "실시간 소식"
+      : dataStatus.includes("불안정")
+        ? "예시 화면"
+        : "불러오는 중";
 
   function handleGeolocation() {
     if (!navigator.geolocation) {
-      setGeoStatus("이 브라우저는 위치 정보를 지원하지 않습니다.");
+      setGeoStatus("이 기기에서는 위치 기능을 바로 사용할 수 없어요.");
       return;
     }
 
-    setGeoStatus("위치를 가져오는 중...");
+    setGeoStatus("내 위치를 가져오는 중이에요…");
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -294,11 +304,11 @@ export default function Dashboard({
           lng: position.coords.longitude,
         });
         setGeoStatus(
-          `위치 저장됨: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`
+          `현재 위치를 담아뒀어요: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`
         );
       },
       () => {
-        setGeoStatus("권한이 없어도 제보는 가능합니다. 구/동과 장소만 입력하세요.");
+        setGeoStatus("위치를 허용하지 않아도 괜찮아요. 구와 장소만 적어도 제보할 수 있어요.");
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
@@ -336,7 +346,7 @@ export default function Dashboard({
       sourceType: "user_report",
     };
 
-    setReportStatus("제보 저장 중입니다.");
+    setReportStatus("제보를 저장하고 있어요…");
 
     const client = getSupabaseBrowserClient();
     if (client) {
@@ -364,15 +374,13 @@ export default function Dashboard({
           setSelectedDistrict(savedReport.district);
         });
 
-        setReportStatus("Supabase reports 테이블에 저장했습니다.");
+        setReportStatus("제보가 올라갔어요. 다른 사람도 바로 볼 수 있어요.");
         form.reset();
         setGeoPoint(null);
-        setGeoStatus(
-          "GPS는 선택입니다. 이후 Kakao 지도 반경 매칭의 기준점으로 사용됩니다."
-        );
+        setGeoStatus("위치는 선택 사항이에요. 구와 장소만 적어도 제보할 수 있어요.");
         return;
       } catch {
-        setReportStatus("Supabase 저장에 실패해 브라우저 로컬 저장으로 대체했습니다.");
+        setReportStatus("연결이 잠시 불안정해 이 기기에 먼저 저장했어요.");
       }
     }
 
@@ -384,12 +392,10 @@ export default function Dashboard({
       setSelectedDistrict(district);
     });
 
-    setReportStatus("로컬 저장으로 반영했습니다.");
+    setReportStatus("제보를 이 기기에 저장해 두었어요.");
     form.reset();
     setGeoPoint(null);
-    setGeoStatus(
-      "GPS는 선택입니다. 이후 Kakao 지도 반경 매칭의 기준점으로 사용됩니다."
-    );
+    setGeoStatus("위치는 선택 사항이에요. 구와 장소만 적어도 제보할 수 있어요.");
   }
 
   async function handleSubscriptionSubmit(event: FormEvent<HTMLFormElement>) {
@@ -408,7 +414,7 @@ export default function Dashboard({
       sourceType: "user",
     };
 
-    setSubscriptionStatus("알림 구독 저장 중입니다.");
+    setSubscriptionStatus("알림 설정을 저장하고 있어요…");
 
     const client = getSupabaseBrowserClient();
     let nextSubscription = draftSubscription;
@@ -423,14 +429,12 @@ export default function Dashboard({
           nickname: draftSubscription.nickname,
           note: draftSubscription.note,
         });
-        setSubscriptionStatus("Supabase alert_subscriptions 테이블에도 저장했습니다.");
+        setSubscriptionStatus("알림 설정을 저장했어요. 다음 소식을 더 빨리 확인할 수 있어요.");
       } catch {
-        setSubscriptionStatus(
-          "Supabase 저장은 실패했고, 브라우저 로컬 저장은 유지했습니다."
-        );
+        setSubscriptionStatus("연결이 잠시 불안정해도 이 기기에는 알림 설정을 남겨뒀어요.");
       }
     } else {
-      setSubscriptionStatus("env 연결 전이므로 브라우저 로컬 저장으로 반영했습니다.");
+      setSubscriptionStatus("지금은 이 기기에 알림 설정을 저장했어요.");
     }
 
     startTransition(() => {
@@ -444,70 +448,91 @@ export default function Dashboard({
   }
 
   return (
-    <div className="page-shell">
+    <main id="main-content" className="page-shell">
       <header className="hero surface">
         <div className="topbar">
-          <div>
-            <p className="eyebrow">KnifeTruck</p>
-            <h1>수원 제보형 칼갈이 알림 MVP</h1>
+          <div className="brand-lockup">
+            <p className="eyebrow">우리 동네 칼갈이</p>
+            <h1>칼갈이 트럭, 오늘 우리 동네에 왔는지 바로 확인하세요</h1>
           </div>
           <div className="pill-row">
             <span className="pill">{supabaseLabel}</span>
-            <span className="pill pill-muted">Kakao Maps Later</span>
-            <span className="pill pill-muted">Public Repo</span>
+            <span className="pill pill-muted">수원 중심</span>
+            <span className="pill pill-muted">동네 알림</span>
           </div>
         </div>
 
         <div className="hero-grid">
-          <div>
+          <div className="hero-copy-column">
+            <p className="hero-kicker">수원에서 먼저 시작하는 동네 제보 서비스</p>
             <p className="hero-copy">
-              핵심은 provider 목록이 아니라 report 흐름입니다. 제보를 먼저 저장하고,
-              그 위에 alert subscription과 official provider base를 덧붙이는 구조로
-              앱을 시작합니다.
+              시장 앞이나 주민센터 근처에 잠깐 들르는 칼갈이 트럭은 놓치기 쉽습니다.
+              본 사람이 알려주고, 필요한 사람은 바로 확인하고, 다음 방문도 알림으로
+              챙길 수 있게 만든 화면입니다.
             </p>
             <div className="cta-row">
               <a className="button button-primary" href="#report-form">
-                지금 제보하기
+                지금 본 곳 알려주기
               </a>
               <a className="button button-secondary" href="#subscription-form">
-                알림 설정
+                우리 동네 알림 받기
               </a>
+            </div>
+            <div className="signal-strip" aria-label="서비스 핵심 흐름">
+              <article className="signal-step">
+                <span className="signal-index">01</span>
+                <strong>본 사람이 알려요</strong>
+                <p>어디에서 봤는지 간단히 적으면 바로 동네 소식이 됩니다.</p>
+              </article>
+              <article className="signal-step">
+                <span className="signal-index">02</span>
+                <strong>근처 소식을 봐요</strong>
+                <p>방금 올라온 제보를 보고 헛걸음을 줄일 수 있어요.</p>
+              </article>
+              <article className="signal-step">
+                <span className="signal-index">03</span>
+                <strong>다음 방문도 챙겨요</strong>
+                <p>자주 가는 동네는 저장해 두고 다시 왔을 때 놓치지 않아요.</p>
+              </article>
             </div>
           </div>
 
           <div className="stat-grid">
             <article className="stat-card">
-              <span>최근 제보</span>
+              <span>오늘 올라온 소식</span>
               <strong>{reports.length}</strong>
             </article>
             <article className="stat-card">
-              <span>활성 구역</span>
+              <span>둘러볼 수 있는 지역</span>
               <strong>{new Set(reports.map((report) => report.district)).size}</strong>
             </article>
             <article className="stat-card">
-              <span>Bootstrap Providers</span>
+              <span>함께 보는 장인</span>
               <strong>{providerCatalog.length}</strong>
             </article>
             <article className="stat-card">
-              <span>알림 구독</span>
+              <span>알림 요청</span>
               <strong>{subscriptions.length}</strong>
             </article>
           </div>
         </div>
-        <p className="status-text">{dataStatus}</p>
+        <p className="status-text" role="status" aria-live="polite">
+          {dataStatus}
+        </p>
       </header>
 
       <section className="section surface">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Recent Reports</p>
-            <h2>최근 제보 피드</h2>
+            <p className="eyebrow">방금 올라온 소식</p>
+            <h2>지금 근처에서 본 칼갈이 트럭</h2>
           </div>
           <div className="filter-row">
             {DISTRICTS.map((district) => (
               <button
                 key={district}
                 type="button"
+                aria-pressed={district === selectedDistrict}
                 className={district === selectedDistrict ? "filter active" : "filter"}
                 onClick={() => startTransition(() => setSelectedDistrict(district))}
               >
@@ -520,70 +545,78 @@ export default function Dashboard({
 
         <div className="report-grid">
           <aside className="map-panel">
-            <h3>운영 인사이트</h3>
+            <h3>한눈에 보기</h3>
             <div className="insight-grid">
               <article className="insight-card">
-                <span>선택 구역</span>
+                <span>보고 있는 지역</span>
                 <strong>{selectedDistrict === "all" ? "수원 전체" : selectedDistrict}</strong>
               </article>
               <article className="insight-card">
-                <span>사진 포함</span>
+                <span>사진 있는 제보</span>
                 <strong>{photoCount}건</strong>
               </article>
               <article className="insight-card">
-                <span>평균 신뢰도</span>
+                <span>확인도 평균</span>
                 <strong>{averageTrust || "-"}점</strong>
               </article>
               <article className="insight-card insight-wide">
-                <span>가장 최근 신호</span>
+                <span>가장 최근 소식</span>
                 <strong>
                   {latestVisibleReport
                     ? `${latestVisibleReport.district} ${latestVisibleReport.neighborhood} · ${latestVisibleReport.place}`
-                    : "최근 신호 없음"}
+                    : "새 소식 기다리는 중"}
                 </strong>
               </article>
             </div>
             <p className="section-note">
-              Kakao Maps 연동 전 단계에서는 report 밀도와 대표 위치를 카드로 먼저
-              검증합니다.
+              지도 기능이 붙기 전에는 최근 제보와 동네 분위기를 먼저 보여드리고 있어요.
             </p>
           </aside>
 
           <div className="feed-column">
-            {visibleReports.map((report) => {
-              const provider = providerCatalog.find(
-                (item) => item.id === report.providerId
-              );
+            {visibleReports.length === 0 ? (
+              <article className="empty-card">
+                <h3>아직 이 지역의 새 소식이 없어요</h3>
+                <p className="section-note">
+                  가장 먼저 본 사람이 알려 주면 여기서 바로 확인할 수 있어요.
+                </p>
+              </article>
+            ) : (
+              visibleReports.map((report) => {
+                const provider = providerCatalog.find(
+                  (item) => item.id === report.providerId
+                );
 
-              return (
-                <article key={report.id} className="report-card">
-                  <div className="report-meta">
-                    <strong>{getDisplayLabel(report)}</strong>
-                    <span>{formatReportedAt(report.reportedAt)}</span>
-                  </div>
-                  <div>
-                    <div className="report-top">
-                      <p className="report-area">
-                        {report.district} · {report.neighborhood}
+                return (
+                  <article key={report.id} className="report-card">
+                    <div className="report-meta">
+                      <strong>{getDisplayLabel(report)}</strong>
+                      <span>{formatReportedAt(report.reportedAt)}</span>
+                    </div>
+                    <div>
+                      <div className="report-top">
+                        <p className="report-area">
+                          {report.district} · {report.neighborhood}
+                        </p>
+                        <span className={`trust-pill tone-${getTrustTone(report.trustScore)}`}>
+                          확인도 {report.trustScore}
+                        </span>
+                      </div>
+                      <h3>{report.place}</h3>
+                      <p className="report-description">
+                        {report.truckType} · {provider?.name ?? report.providerHint ?? "미확인 트럭"}
                       </p>
-                      <span className={`trust-pill tone-${getTrustTone(report.trustScore)}`}>
-                        신뢰 {report.trustScore}
-                      </span>
+                      <p className="report-description">{report.note || "남겨진 설명이 아직 없어요."}</p>
+                      <div className="meta-row">
+                        <span>{report.hasPhoto ? "사진 있음" : "사진 없음"}</span>
+                        <span>{report.reporterAlias || "익명 제보"}</span>
+                        <span>{getSourceLabel(report.sourceType)}</span>
+                      </div>
                     </div>
-                    <h3>{report.place}</h3>
-                    <p className="report-description">
-                      {report.truckType} · {provider?.name ?? report.providerHint ?? "미확인 트럭"}
-                    </p>
-                    <p className="report-description">{report.note || "메모 없음"}</p>
-                    <div className="meta-row">
-                      <span>{report.hasPhoto ? "사진 있음" : "사진 없음"}</span>
-                      <span>{report.reporterAlias || "익명 제보"}</span>
-                      <span>{report.sourceType}</span>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+                  </article>
+                );
+              })
+            )}
           </div>
         </div>
       </section>
@@ -591,31 +624,40 @@ export default function Dashboard({
       <section className="section surface">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Neighborhood Pulse</p>
-            <h2>동네별 신호 요약</h2>
+            <p className="eyebrow">많이 보이는 곳</p>
+            <h2>요즘 소식이 자주 올라오는 동네</h2>
           </div>
         </div>
         <div className="info-grid">
-          {pulseRows.map((row) => (
-            <article key={`${row.district}-${row.label}`} className="info-card">
-              <p className="eyebrow">{row.district}</p>
-              <h3>{row.label}</h3>
-              <div className="metric-list">
-                <div>
-                  <span>제보</span>
-                  <strong>{row.count}건</strong>
-                </div>
-                <div>
-                  <span>사진</span>
-                  <strong>{row.photoCount}건</strong>
-                </div>
-                <div>
-                  <span>최고 신뢰도</span>
-                  <strong>{row.maxTrust}</strong>
-                </div>
-              </div>
+          {pulseRows.length === 0 ? (
+            <article className="empty-card">
+              <h3>요약할 소식이 아직 없어요</h3>
+              <p className="section-note">
+                제보가 쌓이면 동네별 사진 수와 최고 신뢰도가 자동 집계됩니다.
+              </p>
             </article>
-          ))}
+          ) : (
+            pulseRows.map((row) => (
+              <article key={`${row.district}-${row.label}`} className="info-card">
+                <p className="eyebrow">{row.district}</p>
+                <h3>{row.label}</h3>
+                <div className="metric-list">
+                  <div>
+                    <span>제보</span>
+                    <strong>{row.count}건</strong>
+                  </div>
+                  <div>
+                    <span>사진</span>
+                    <strong>{row.photoCount}건</strong>
+                  </div>
+                  <div>
+                    <span>최고 신뢰도</span>
+                    <strong>{row.maxTrust}</strong>
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
         </div>
       </section>
 
@@ -623,14 +665,14 @@ export default function Dashboard({
         <form id="report-form" className="form-panel" onSubmit={handleReportSubmit}>
           <div className="section-head">
             <div>
-              <p className="eyebrow">Fast Report</p>
-              <h2>지금 여기 있음 제보</h2>
+              <p className="eyebrow">바로 알리기</p>
+              <h2>지금 본 트럭 알려주기</h2>
             </div>
           </div>
           <div className="form-grid">
             <label>
               구
-              <select name="district" required defaultValue="">
+              <select name="district" autoComplete="off" required defaultValue="">
                 <option value="" disabled>
                   구 선택
                 </option>
@@ -643,15 +685,27 @@ export default function Dashboard({
             </label>
             <label>
               동
-              <input name="neighborhood" placeholder="예: 행궁동" required />
+              <input
+                autoComplete="off"
+                name="neighborhood"
+                placeholder="예: 행궁동…"
+                required
+                type="text"
+              />
             </label>
             <label>
               발견 장소
-              <input name="place" placeholder="예: 행궁동 공영주차장 앞" required />
+              <input
+                autoComplete="street-address"
+                name="place"
+                placeholder="예: 행궁동 공영주차장 앞…"
+                required
+                type="text"
+              />
             </label>
             <label>
               트럭 유형
-              <select name="truckType" required defaultValue="">
+              <select name="truckType" autoComplete="off" required defaultValue="">
                 <option value="" disabled>
                   유형 선택
                 </option>
@@ -662,46 +716,61 @@ export default function Dashboard({
             </label>
             <label>
               상호 힌트
-              <input name="providerHint" placeholder="예: 칼의부활, 대장장이" />
+              <input
+                autoComplete="organization"
+                name="providerHint"
+                placeholder="예: 칼의부활, 대장장이…"
+                type="text"
+              />
             </label>
             <label>
               사진 여부
-              <select name="hasPhoto" defaultValue="yes">
+              <select name="hasPhoto" autoComplete="off" defaultValue="yes">
                 <option value="yes">사진 있음</option>
                 <option value="no">사진 없음</option>
               </select>
             </label>
             <label>
               제보자 닉네임
-              <input name="reporterAlias" placeholder="선택 입력" />
+              <input
+                autoComplete="nickname"
+                name="reporterAlias"
+                placeholder="선택 입력…"
+                type="text"
+              />
             </label>
             <label className="field-span">
               메모
               <textarea
+                autoComplete="off"
                 name="note"
+                placeholder="예: 줄 4팀 정도, 가위 가능…"
                 rows={4}
-                placeholder="예: 줄 4팀 정도, 가위 가능"
               />
             </label>
           </div>
           <div className="cta-row">
             <button type="button" className="button button-secondary" onClick={handleGeolocation}>
-              현재 위치 가져오기
+              내 위치 담기
             </button>
             <button type="submit" className="button button-primary">
-              제보 저장
+              제보 올리기
             </button>
           </div>
-          <p className="section-note">{geoStatus}</p>
-          <p className="status-text">{reportStatus}</p>
+          <p className="section-note" role="status" aria-live="polite">
+            {geoStatus}
+          </p>
+          <p className="status-text" role="status" aria-live="polite">
+            {reportStatus}
+          </p>
         </form>
 
-        <aside className="summary-panel">
-          <p className="eyebrow">Latest Save</p>
+        <aside className="summary-panel" aria-live="polite">
+          <p className="eyebrow">방금 남긴 제보</p>
           <h2>
             {latestReport
               ? `${latestReport.district} ${latestReport.neighborhood}`
-              : "아직 저장된 제보 없음"}
+              : "아직 남긴 제보가 없어요"}
           </h2>
           <div className="metric-list">
             <div>
@@ -726,7 +795,7 @@ export default function Dashboard({
             </div>
           </div>
           <p className="section-note">
-            다음 단계에서는 이 저장이 Supabase reports 테이블과 Storage 버킷으로 연결됩니다.
+            남긴 제보는 바로 목록에 쌓이고, 같은 동네 사람들에게도 도움이 됩니다.
           </p>
         </aside>
       </section>
@@ -739,14 +808,14 @@ export default function Dashboard({
         >
           <div className="section-head">
             <div>
-              <p className="eyebrow">Alert Subscription</p>
-              <h2>우리 동네 알림 설정</h2>
+              <p className="eyebrow">다음 방문 챙기기</p>
+              <h2>우리 동네 알림 받기</h2>
             </div>
           </div>
           <div className="form-grid">
             <label>
               관심 구
-              <select name="district" required defaultValue="">
+              <select name="district" autoComplete="off" required defaultValue="">
                 <option value="" disabled>
                   구 선택
                 </option>
@@ -759,11 +828,17 @@ export default function Dashboard({
             </label>
             <label>
               기준 동
-              <input name="anchorNeighborhood" placeholder="예: 인계동" required />
+              <input
+                autoComplete="off"
+                name="anchorNeighborhood"
+                placeholder="예: 인계동…"
+                required
+                type="text"
+              />
             </label>
             <label>
               반경
-              <select name="radiusMeters" defaultValue="1000">
+              <select name="radiusMeters" autoComplete="off" defaultValue="1000">
                 <option value="500">500m</option>
                 <option value="1000">1km</option>
                 <option value="1500">1.5km</option>
@@ -772,7 +847,7 @@ export default function Dashboard({
             </label>
             <label>
               채널
-              <select name="channel" defaultValue="웹 푸시">
+              <select name="channel" autoComplete="off" defaultValue="웹 푸시">
                 <option value="웹 푸시">웹 푸시</option>
                 <option value="카카오 알림톡">카카오 알림톡</option>
                 <option value="문자">문자</option>
@@ -780,31 +855,39 @@ export default function Dashboard({
             </label>
             <label>
               별칭
-              <input name="nickname" placeholder="예: 행궁동 알림" />
+              <input
+                autoComplete="nickname"
+                name="nickname"
+                placeholder="예: 행궁동 알림…"
+                type="text"
+              />
             </label>
             <label className="field-span">
               메모
               <textarea
+                autoComplete="off"
                 name="note"
+                placeholder="예: 저녁 시간대 제보 우선…"
                 rows={4}
-                placeholder="예: 저녁 시간대 제보 우선"
               />
             </label>
           </div>
           <div className="cta-row">
             <button type="submit" className="button button-primary">
-              구독 저장
+              알림 저장
             </button>
           </div>
-          <p className="status-text">{subscriptionStatus}</p>
+          <p className="status-text" role="status" aria-live="polite">
+            {subscriptionStatus}
+          </p>
         </form>
 
-        <aside className="summary-panel">
-          <p className="eyebrow">Subscription State</p>
+        <aside className="summary-panel" aria-live="polite">
+          <p className="eyebrow">내 알림 설정</p>
           <h2>
             {latestSubscription
               ? latestSubscription.nickname || `${latestSubscription.district} 알림`
-              : "아직 저장된 알림 없음"}
+              : "아직 저장한 알림이 없어요"}
           </h2>
           <div className="metric-list">
             <div>
@@ -823,17 +906,26 @@ export default function Dashboard({
             </div>
           </div>
           <div className="stack-list">
-            {subscriptions.slice(0, 4).map((subscription) => (
-              <article key={subscription.id} className="stack-card">
-                <strong>
-                  {subscription.nickname || `${subscription.district} 알림`}
-                </strong>
-                <p>
-                  {subscription.district} {subscription.anchorNeighborhood} ·{" "}
-                  {subscription.radiusMeters}m
+            {subscriptions.length === 0 ? (
+              <article className="empty-card">
+                <h3>첫 알림 구독을 기다리는 중</h3>
+                <p className="section-note">
+                  기준 동과 반경을 저장하면 여기에서 최근 구독 상태를 보여줍니다.
                 </p>
               </article>
-            ))}
+            ) : (
+              subscriptions.slice(0, 4).map((subscription) => (
+                <article key={subscription.id} className="stack-card">
+                  <strong>
+                    {subscription.nickname || `${subscription.district} 알림`}
+                  </strong>
+                  <p>
+                    {subscription.district} {subscription.anchorNeighborhood} ·{" "}
+                    {subscription.radiusMeters}m
+                  </p>
+                </article>
+              ))
+            )}
           </div>
         </aside>
       </section>
@@ -841,48 +933,56 @@ export default function Dashboard({
       <section className="section surface">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Bootstrap Providers</p>
-            <h2>보조 provider 카탈로그</h2>
+            <p className="eyebrow">함께 보는 장인 정보</p>
+            <h2>주변에서 활동하는 칼갈이 장인</h2>
           </div>
           <p className="section-note">
-            official registry가 쌓이기 전까지는 bootstrap 데이터가 검수와 초기 지도
-            채우기를 돕습니다.
+            정식 등록 전이라도 기본 정보는 함께 볼 수 있게 정리해 두었어요.
           </p>
         </div>
         <div className="provider-grid">
-          {providerCatalog.map((provider) => (
-            <article key={provider.id} className="provider-card">
-              <div className="provider-top">
-                <div>
-                  <p className="eyebrow">{provider.baseArea}</p>
-                  <h3>{provider.name}</h3>
-                </div>
-                <span className="pill pill-muted">
-                  {provider.mobileService ? "출장 가능" : "방문형"}
-                </span>
-              </div>
-              <p className="section-note">{provider.intro}</p>
-              <div className="tag-row">
-                {provider.serviceTags.map((tag) => (
-                  <span key={tag} className="tag">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <div className="metric-list">
-                <div>
-                  <span>활동 지역</span>
-                  <strong>{provider.serviceAreas.join(", ")}</strong>
-                </div>
-                <div>
-                  <span>가격 힌트</span>
-                  <strong>{provider.priceHints.join(", ")}</strong>
-                </div>
-              </div>
+          {providerCatalog.length === 0 ? (
+            <article className="empty-card">
+              <h3>아직 공개된 장인 정보가 많지 않아요</h3>
+              <p className="section-note">
+                확인된 장인 정보가 늘어나면 이곳에서 한눈에 살펴볼 수 있어요.
+              </p>
             </article>
-          ))}
+          ) : (
+            providerCatalog.map((provider) => (
+              <article key={provider.id} className="provider-card">
+                <div className="provider-top">
+                  <div>
+                    <p className="eyebrow">{provider.baseArea}</p>
+                    <h3>{provider.name}</h3>
+                  </div>
+                  <span className="pill pill-muted">
+                    {provider.mobileService ? "출장 가능" : "방문형"}
+                  </span>
+                </div>
+                <p className="section-note">{provider.intro}</p>
+                <div className="tag-row">
+                  {provider.serviceTags.map((tag) => (
+                    <span key={tag} className="tag">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="metric-list">
+                  <div>
+                    <span>활동 지역</span>
+                    <strong>{provider.serviceAreas.join(", ")}</strong>
+                  </div>
+                  <div>
+                    <span>가격 참고</span>
+                    <strong>{provider.priceHints.join(", ")}</strong>
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
         </div>
       </section>
-    </div>
+    </main>
   );
 }
