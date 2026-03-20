@@ -1,0 +1,17 @@
+# Public-safe repository policy
+# Keep the public repository minimal until private strategy and data are separated.
+
+assets/
+data/
+db/
+docs/
+scripts/
+index.html
+requirements.txt
+
+# Local environment
+.env
+.env.*
+*.log
+Thumbs.db
+.DS_Store
