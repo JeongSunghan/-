@@ -480,6 +480,47 @@ h3 {
     linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(245, 236, 224, 0.88));
 }
 
+/* ── Kakao Map ── */
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--bg-deep);
+}
+
+.map-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.map-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  background: rgba(255, 250, 243, 0.8);
+}
+
+.map-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.map-fallback p {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
 .insight-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -779,6 +820,98 @@ h3 {
 
   .cta-row {
     flex-direction: column;
+  }
+}
+
+/* ── Quick-toggle button ── */
+.quick-toggle {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 0.84rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Floating Action Button (mobile) ── */
+.fab {
+  display: none;
+  position: fixed;
+  right: 20px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  z-index: 90;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 0 22px 0 18px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent) 0%, #d56422 100%);
+  color: #fff8f2;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow:
+    0 8px 28px rgba(178, 80, 29, 0.36),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.fab:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 36px rgba(178, 80, 29, 0.42),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.fab:active {
+  transform: translateY(0);
+}
+
+.fab svg {
+  flex-shrink: 0;
+}
+
+.fab-label {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .fab {
+    display: inline-flex;
+  }
+
+  /* 모바일에서 page-shell 하단 패딩 확보 (FAB 가림 방지) */
+  .page-shell {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* 모바일에서 hero 더 컴팩트 */
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+  }
+
+  .hero-copy {
+    font-size: 0.95rem;
+  }
+
+  .signal-strip {
+    gap: 8px;
+  }
+
+  .signal-step {
+    padding: 12px;
+  }
+
+  /* 모바일에서 stat-card 더 작게 */
+  .stat-card {
+    min-height: 100px;
+    padding: 14px;
+  }
+
+  .stat-card strong {
+    margin-top: 8px;
+    font-size: clamp(1.5rem, 3vw, 2rem);
   }
 }
 
